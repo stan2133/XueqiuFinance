@@ -4,11 +4,16 @@ import pygal
 import numpy as np
 
 
-_sheet_type = ['incstatement', 'cfstatement', 'balsheet' ]
+_sheet_type = ['incstatement', 'cfstatement', 'balsheet']
+# Create a list of string of digit number
 _digit = [str(i) for i in range(1, 10)]
 
 
 def parsing_each_stock(data):
+    """
+    @:param data: all stock financial statement record stored in MongoDB
+    @:return result: a list of dicts(the statistic result of counting number on every digit number).
+    """
     result = []
     for stat_class in data.keys():
         record = list(data[stat_class])
@@ -22,6 +27,10 @@ def parsing_each_stock(data):
 
 
 def clean_data(data):
+    """
+    @:param data: one stock financial statements including bal, cf and income statements stored in MongoDB
+    @:return new_str_num: get all the first digit of all the numeric numbers in financial record.
+    """
     new_str_num = []
     for item in data:
         keys = ["compcode","publishdate","begindate","enddate","reporttype","adjustdate","accstacode","accstaname"]
@@ -38,7 +47,12 @@ def clean_data(data):
     return new_str_num
 
 
-def ben_ford(useful_data,statement):
+def ben_ford(useful_data, statement):
+    """
+    @:param useful_data: three stock financial statements including bal, cf and income statements stored in MongoDB
+    @:param statement: the categorical of the financial statement
+    @:return statistic: the counting number of every digits
+    """
     stat = clean_data(useful_data)
     statistic = dict((x,stat.count(x)) for x in set(stat))
     statistic.pop('0')
@@ -47,6 +61,10 @@ def ben_ford(useful_data,statement):
 
 
 def gen_percentage(data):
+    """
+    @:param data: the return of parsing_each_stock
+    @:return seq: the distributions of every stock in stock_sets as well as the standard distribution
+    """
     sum_up = []
     for val in _digit:
         y = 0
@@ -71,6 +89,11 @@ def gen_percentage(data):
 
 
 def criterion(seq, Tol=0.2):
+    """
+    @:param seq: the return of gen_percentage
+    @:param Tol: tolerance to make a decision whether the stock is fraud
+    @:return flag: flag 1 means fraud, and flag 0 means pass
+    """
     a = np.array(seq['original'])
     for key in seq.keys():
         b = np.array(seq[key])
@@ -86,6 +109,7 @@ def criterion(seq, Tol=0.2):
 
 
 if __name__ == '__main__':
+    # using the data from database and generating svg files with pygql.
     dbclient = pymongo.MongoClient('mongodb://127.0.0.1')
     stock_set = list(dbclient['Xueqiu']['stockbyindustry'].find({}, {'symbol': 1, '_id': 0}))
     fraud = []
