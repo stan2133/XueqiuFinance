@@ -6,6 +6,9 @@ import json
 import pymongo
 import datetime
 import time
+import pandas as pd
+import numpy as np
+from io import StringIO
 __author__ = 'stan'
 
 _headers = {
@@ -24,6 +27,8 @@ _csvUrl = "http://api.xueqiu.com/stock/f10/{sheet_type}.csv?symbol={stock_id}&pa
 _IndustryUrl = "https://xueqiu.com/stock/cata/stocklist.json?page={page}&size={size}&order={order}&orderby={orderby}&exchange={exchange}&plate="
 _jsonUrl = "https://xueqiu.com/stock/f10/{sheet_type}.json?symbol={stock_id}&page={page}&size={size}"
 _sheet_type = ['incstatement', 'cfstatement', 'balsheet' ]
+_historyUrl = 'https://xueqiu.com/S/{stock_id}/historical.csv'
+_shareholderUrl = 'https://xueqiu.com/stock/f10/shareholdernum.json?symbol={stock_id}&page={page}&size={size}'
 
 
 def getJson(sheet_type, stock_id, cookie, page=1, size=10000):
@@ -107,6 +112,26 @@ def stock_parsing(data, dbclient, date, db='Xueqiu', table='stockbyindustry'):
     for item in data:
         item.update({'date': date})
         dbclient[db][table].replace_one({'code': item['code'], 'date': item['date']}, item, upsert=True)
+
+
+def get_history_std(stock_id, cookie):
+    _orientUrl = _historyUrl.format(stock_id=stock_id)
+    # file_name = stock_id + 'history.csv'
+    headers = _headers.copy()
+    headers.update({'cookie': cookie})
+    r = requests.get(_orientUrl, headers=headers)
+    if r.status_code == 200:
+        # print 'the csv file is requested'
+        data = pd.read_csv(StringIO(r.text))
+        data.index = [datetime.datetime.strptime(i, '%Y-%m-%d') for i in data.date]
+        year_range = set(data.index.year)
+        year_std = [{year: np.std(data[data.index.year == year].close)} for year in year_range]
+        return year_std
+        # # with open(file_name, "wb") as f:
+        #     f.write(r.text.encode("UTF-8"))
+
+    else:
+        print 'please check the cookie'
 
 
 if __name__ == '__main__':

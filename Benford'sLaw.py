@@ -2,6 +2,7 @@
 import pymongo
 import pygal
 import numpy as np
+from spider import get_history_std,_headers,_historyUrl
 
 
 _sheet_type = ['incstatement', 'cfstatement', 'balsheet']
@@ -54,9 +55,9 @@ def ben_ford(useful_data, statement):
     @:return statistic: the counting number of every digits
     """
     stat = clean_data(useful_data)
-    statistic = dict((x,stat.count(x)) for x in set(stat))
+    statistic = dict((x, stat.count(x)) for x in set(stat))
     statistic.pop('0')
-    statistic.update({'statement':statement})
+    statistic.update({'statement': statement})
     return statistic
 
 
@@ -139,6 +140,16 @@ if __name__ == '__main__':
         else:
             pass
     print fraud
+    cookie = 's=8s125bbdhi; xq_a_token=353719375a63d9c5504083a962c65c231dfb715c; xqat=353719375a63d9c5504083a962c65c231dfb715c; xq_r_token=8063e0977bb80c6b9d90791a554d63e6285fef66; xq_is_login=1; u=3420308671; xq_token_expire=Sat%20Oct%2008%202016%2003%3A35%3A29%20GMT%2B0800%20(CST); bid=cfde5050318cc5826136d5dac4483954_it0g8w9o; __utma=1.1190508203.1473708993.1474065963.1474235795.6; __utmb=1.9.10.1474235795; __utmc=1; __utmz=1.1473708993.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); Hm_lvt_1db88642e346389874251b5a1eded6e3=1473708927; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1474236378'
+    # save to file:
+    fraud_vol = []
+    for stock_id in fraud:
+        stock_vol = {str(stock_id): get_history_std(stock_id, cookie=cookie)}
+        fraud_vol.append(stock_vol)
+    print fraud_vol
+    with open('./fraud_vol.txt', 'w') as f:
+        f.writelines(["%s\n" % item for item in fraud_vol])
+
 
 
 
